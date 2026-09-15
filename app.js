@@ -1,10 +1,10 @@
 // ============================================================
-// CONTROL CAFETERÍA — app.js (v1.3)
+// CONTROL CAFETERÍA — app.js
 // Toda la información se guarda en IndexedDB, dentro del navegador.
-// Cuenta con sincronización automática opcional a GitHub.
+// No hay servidor: la app funciona sola, incluso sin internet.
 // ============================================================
 
-const VERSION_APP = "V1.3";
+const VERSION_APP = "V1.2";
 
 const ICONOS = {
   bolon: `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
@@ -139,8 +139,7 @@ function limpiarStore(nombreStore) {
 
 // ---------------- ESTADO ----------------
 let productos = [];
-// Carrito ahora almacena { itemId, productoId, nombre, tipoConsumo, precioUnitario, cantidad }
-let carrito = [];
+let carrito = []; // { productoId, nombre, precioUnitario, cantidad }
 let tipoConsumo = "local";
 let rangoHistorial = "hoy";
 let tabHistorial = "ventas";
@@ -148,7 +147,7 @@ let metodoPagoSeleccionado = "Efectivo";
 let configDesbloqueada = false;
 
 // ---------------- UTILIDADES ----------------
-const money = (n) => `$${Number(n || 0).toFixed(2)}`;
+const money = (n) => `$${n.toFixed(2)}`;
 
 function fechaLocalStr(d = new Date()) {
   const y = d.getFullYear();
@@ -161,7 +160,7 @@ function horaLocalStr(d = new Date()) {
 }
 function inicioSemana(d = new Date()) {
   const dia = d.getDay(); // 0=domingo
-  const diff = (dia === 0 ? -6 : 1) - dia;
+  const diff = (dia === 0 ? -6 : 1) - dia; // lunes como inicio
   const lunes = new Date(d);
   lunes.setDate(d.getDate() + diff);
   lunes.setHours(0, 0, 0, 0);
@@ -181,7 +180,7 @@ function mostrarToast(msg) {
   t.textContent = msg;
   t.classList.remove("oculto");
   clearTimeout(mostrarToast._h);
-  mostrarToast._h = setTimeout(() => t.classList.add("oculto"), 2600);
+  mostrarToast._h = setTimeout(() => t.classList.add("oculto"), 2200);
 }
 
 function precioProducto(producto, tipo) {
@@ -212,17 +211,6 @@ function actualizarReloj() {
     `${dias[ahora.getDay()]} ${fechaLocalStr(ahora)} · ${horaLocalStr(ahora)}`;
 }
 
-// ---------------- VENTA: SELECTOR LOCAL / LLEVAR ----------------
-document.querySelectorAll(".selector-consumo [data-tipo]").forEach((btn) => {
-  btn.addEventListener("click", () => {
-    tipoConsumo = btn.dataset.tipo;
-    document.querySelectorAll(".selector-consumo [data-tipo]").forEach((b) =>
-      b.classList.toggle("chip-activo", b === btn)
-    );
-    renderGridProductos();
-  });
-});
-
 // ---------------- VENTA: PRODUCTOS Y CARRITO ----------------
 function renderGridProductos() {
   const grid = document.getElementById("grid-productos");
@@ -243,24 +231,14 @@ function renderGridProductos() {
 
 function agregarAlCarrito(producto) {
   const precio = precioProducto(producto, tipoConsumo);
-  const itemKey = `${producto.id}_${tipoConsumo}`;
-  const existente = carrito.find((i) => i.itemId === itemKey);
-
+  const existente = carrito.find((i) => i.productoId === producto.id);
   if (existente) {
     existente.cantidad += 1;
   } else {
-    carrito.push({
-      itemId: itemKey,
-      productoId: producto.id,
-      nombre: producto.nombre,
-      tipoConsumo: tipoConsumo, // 'local' o 'llevar'
-      precioUnitario: precio,
-      cantidad: 1
-    });
+    carrito.push({ productoId: producto.id, nombre: producto.nombre, precioUnitario: precio, cantidad: 1 });
   }
   renderCarrito();
-
-  // Feedback visual sin tapar la pantalla
+  // Feedback sutil sin desplegar el panel sobre los productos inferiores
   const mini = document.getElementById("carrito-resumen-mini");
   if (mini) {
     mini.style.transform = "scale(1.15)";
@@ -268,12 +246,12 @@ function agregarAlCarrito(producto) {
   }
 }
 
-function cambiarCantidad(itemId, delta) {
-  const item = carrito.find((i) => i.itemId === itemId);
+function cambiarCantidad(productoId, delta) {
+  const item = carrito.find((i) => i.productoId === productoId);
   if (!item) return;
   item.cantidad += delta;
   if (item.cantidad <= 0) {
-    carrito = carrito.filter((i) => i.itemId !== itemId);
+    carrito = carrito.filter((i) => i.productoId !== productoId);
   }
   renderCarrito();
 }
@@ -290,37 +268,32 @@ function renderCarrito() {
     const subtotal = item.precioUnitario * item.cantidad;
     total += subtotal;
     cantidadTotal += item.cantidad;
-    const etiquetaTipo = item.tipoConsumo === "llevar" ? "🥡 Llevar" : "🍽️ Local";
     const fila = document.createElement("div");
     fila.className = "fila-carrito";
     fila.innerHTML = `
       <div class="fila-carrito-info">
-        <div class="fila-carrito-nombre">
-          ${item.nombre}
-          <span class="badge-consumo badge-${item.tipoConsumo}">${etiquetaTipo}</span>
-        </div>
+        <div class="fila-carrito-nombre">${item.nombre}</div>
         <div class="fila-carrito-precio">${money(item.precioUnitario)} c/u</div>
       </div>
       <div class="fila-carrito-controles">
-        <button class="btn-cantidad" data-accion="menos" data-id="${item.itemId}">−</button>
+        <button class="btn-cantidad" data-accion="menos" data-id="${item.productoId}">−</button>
         <span>${item.cantidad}</span>
-        <button class="btn-cantidad" data-accion="mas" data-id="${item.itemId}">+</button>
+        <button class="btn-cantidad" data-accion="mas" data-id="${item.productoId}">+</button>
       </div>
       <div class="fila-carrito-subtotal">${money(subtotal)}</div>
     `;
     lista.appendChild(fila);
   });
 
-  document.getElementById("carrito-total").textContent = money(total);
-  document.getElementById("carrito-resumen-mini").textContent =
-    `${cantidadTotal} item${cantidadTotal === 1 ? "" : "s"} · ${money(total)}`;
+  lista.querySelectorAll("[data-accion='mas']").forEach((b) =>
+    b.addEventListener("click", () => cambiarCantidad(b.dataset.id, 1))
+  );
+  lista.querySelectorAll("[data-accion='menos']").forEach((b) =>
+    b.addEventListener("click", () => cambiarCantidad(b.dataset.id, -1))
+  );
 
-  lista.querySelectorAll(".btn-cantidad").forEach((b) => {
-    b.addEventListener("click", () => {
-      const delta = b.dataset.accion === "mas" ? 1 : -1;
-      cambiarCantidad(b.dataset.id, delta);
-    });
-  });
+  document.getElementById("carrito-total").textContent = money(total);
+  document.getElementById("carrito-resumen-mini").textContent = `${cantidadTotal} items · ${money(total)}`;
 }
 
 document.getElementById("btn-toggle-carrito").addEventListener("click", () => {
@@ -329,27 +302,39 @@ document.getElementById("btn-toggle-carrito").addEventListener("click", () => {
 
 document.getElementById("btn-vaciar-carrito").addEventListener("click", () => {
   if (carrito.length === 0) return;
-  carrito = [];
-  renderCarrito();
+  if (confirm("¿Vaciar el carrito de la venta actual?")) {
+    carrito = [];
+    renderCarrito();
+    document.getElementById("carrito-contenido").classList.remove("abierto");
+  }
 });
 
-// ---------------- VENTA: COBRO ----------------
+// Selector de tipo de consumo: recalcula precios de lo que ya está en el carrito
+document.getElementById("btn-tipo-local").addEventListener("click", () => setTipoConsumo("local"));
+document.getElementById("btn-tipo-llevar").addEventListener("click", () => setTipoConsumo("llevar"));
+
+function setTipoConsumo(tipo) {
+  tipoConsumo = tipo;
+  document.getElementById("btn-tipo-local").classList.toggle("chip-activo", tipo === "local");
+  document.getElementById("btn-tipo-llevar").classList.toggle("chip-activo", tipo === "llevar");
+  carrito.forEach((item) => {
+    const p = productos.find((pr) => pr.id === item.productoId);
+    if (p) item.precioUnitario = precioProducto(p, tipoConsumo);
+  });
+  renderGridProductos();
+  renderCarrito();
+}
+
+// ---------------- COBRO ----------------
 document.getElementById("btn-cobrar").addEventListener("click", () => {
   if (carrito.length === 0) {
-    mostrarToast("El carrito está vacío.");
+    mostrarToast("Agrega al menos un producto antes de cobrar.");
     return;
   }
   const total = carrito.reduce((s, i) => s + i.precioUnitario * i.cantidad, 0);
   document.getElementById("modal-total-monto").textContent = money(total);
-
-  // Resumen de tipos de consumo presentes en la venta
-  const tieneLocal = carrito.some(i => i.tipoConsumo === "local");
-  const tieneLlevar = carrito.some(i => i.tipoConsumo === "llevar");
-  let tipoTexto = "🍽️ En el local";
-  if (tieneLocal && tieneLlevar) tipoTexto = "🍽️ Local + 🥡 Llevar mixto";
-  else if (tieneLlevar) tipoTexto = "🥡 Para llevar";
-
-  document.getElementById("modal-tipo-consumo").textContent = tipoTexto;
+  document.getElementById("modal-tipo-consumo").textContent =
+    tipoConsumo === "local" ? "🍽️ Consumo en el local" : "🥡 Para llevar";
   metodoPagoSeleccionado = "Efectivo";
   document.querySelectorAll("#modal-cobro [data-metodo]").forEach((b) =>
     b.classList.toggle("chip-activo", b.dataset.metodo === "Efectivo")
@@ -380,12 +365,12 @@ document.getElementById("btn-confirmar-cobro").addEventListener("click", async (
     items: carrito.map((i) => ({
       productoId: i.productoId,
       nombre: i.nombre,
-      tipoConsumo: i.tipoConsumo,
       cantidad: i.cantidad,
       precioUnitario: i.precioUnitario,
       subtotal: +(i.precioUnitario * i.cantidad).toFixed(2)
     })),
     total: +total.toFixed(2),
+    tipoConsumo,
     metodoPago: metodoPagoSeleccionado
   };
   await add("ventas", venta);
@@ -394,9 +379,6 @@ document.getElementById("btn-confirmar-cobro").addEventListener("click", async (
   document.getElementById("carrito-contenido").classList.remove("abierto");
   document.getElementById("modal-cobro").classList.add("oculto");
   mostrarToast(`Venta registrada: ${money(total)}`);
-
-  // Sincronización automática con GitHub en segundo plano
-  sincronizarConGitHubSilencioso();
 });
 
 // ---------------- INICIO / DASHBOARD ----------------
@@ -411,58 +393,35 @@ async function renderInicio() {
   const ventasMes = ventas.filter((v) => v.timestamp >= tsMes);
 
   const totalHoy = ventasHoy.reduce((s, v) => s + v.total, 0);
+  const productosHoy = ventasHoy.reduce((s, v) => s + v.items.reduce((a, i) => a + i.cantidad, 0), 0);
   const totalSemana = ventasSemana.reduce((s, v) => s + v.total, 0);
   const totalMes = ventasMes.reduce((s, v) => s + v.total, 0);
-
-  const productosHoy = ventasHoy.reduce((s, v) => s + v.items.reduce((si, it) => si + it.cantidad, 0), 0);
 
   document.getElementById("dash-ventas-hoy").textContent = money(totalHoy);
   document.getElementById("dash-productos-hoy").textContent = productosHoy;
   document.getElementById("dash-ventas-semana").textContent = money(totalSemana);
   document.getElementById("dash-ventas-mes").textContent = money(totalMes);
 
-  // Conteo por producto este mes
-  const conteoMes = {};
-  ventasMes.forEach((v) => {
-    v.items.forEach((it) => {
-      conteoMes[it.nombre] = (conteoMes[it.nombre] || 0) + it.cantidad;
-    });
-  });
+  const conteo = {};
+  ventasMes.forEach((v) => v.items.forEach((i) => {
+    conteo[i.nombre] = (conteo[i.nombre] || 0) + i.cantidad;
+  }));
+  const entradas = Object.entries(conteo).sort((a, b) => b[1] - a[1]);
+  document.getElementById("dash-mas-vendido").textContent = entradas.length ? entradas[0][0] : "—";
 
-  let maxNombre = "—";
-  let maxCant = 0;
-  Object.entries(conteoMes).forEach(([nombre, cant]) => {
-    if (cant > maxCant) {
-      maxCant = cant;
-      maxNombre = `${nombre} (${cant})`;
-    }
-  });
-  document.getElementById("dash-mas-vendido").textContent = maxNombre;
+  const listaDiv = document.getElementById("dash-lista-productos");
+  listaDiv.innerHTML = entradas.length
+    ? entradas.map(([nombre, cant]) =>
+        `<div class="fila-reporte"><span class="fila-reporte-nombre">${nombre}</span><span class="fila-reporte-valor">${cant} unid.</span></div>`
+      ).join("")
+    : `<div class="lista-vacia">Todavía no hay ventas este mes.</div>`;
 
-  // Lista detallada mes
-  const lista = document.getElementById("dash-lista-productos");
-  lista.innerHTML = "";
-  const ordenados = Object.entries(conteoMes).sort((a, b) => b[1] - a[1]);
-  if (ordenados.length === 0) {
-    lista.innerHTML = `<div class="texto-ayuda">Sin ventas este mes.</div>`;
-  } else {
-    ordenados.forEach(([nom, cant]) => {
-      const row = document.createElement("div");
-      row.className = "fila-reporte";
-      row.innerHTML = `<span class="fila-reporte-nombre">${nom}</span><span class="fila-reporte-valor">${cant} unid.</span>`;
-      lista.appendChild(row);
-    });
-  }
-
-  // Estado del último cierre
   const cierres = await getAll("cierres");
-  const cajaEstado = document.getElementById("caja-estado-inicio");
-  if (cierres.length === 0) {
-    cajaEstado.textContent = "Aún no se ha realizado ningún cierre de caja.";
-  } else {
-    const ultimo = cierres[cierres.length - 1];
-    cajaEstado.textContent = `Último cierre: ${ultimo.fecha} ${ultimo.hora} · Total cerrado: ${money(ultimo.total)}`;
-  }
+  const ultimoCierre = cierres.sort((a, b) => b.timestampCierre - a.timestampCierre)[0];
+  const estadoDiv = document.getElementById("caja-estado-inicio");
+  estadoDiv.textContent = ultimoCierre
+    ? `Último cierre de caja: ${ultimoCierre.fecha} — ${money(ultimoCierre.totalVentas)}`
+    : "Todavía no se ha hecho ningún cierre de caja.";
 }
 
 // ---------------- HISTORIAL ----------------
@@ -502,292 +461,208 @@ function filtrarVentasPorRango(ventas) {
 }
 
 async function renderHistorial() {
-  const todasVentas = await getAll("ventas");
-  const ventas = filtrarVentasPorRango(todasVentas).sort((a, b) => b.timestamp - a.timestamp);
+  const todas = await getAll("ventas");
+  const filtradas = filtrarVentasPorRango(todas).sort((a, b) => b.timestamp - a.timestamp);
 
-  const total = ventas.reduce((s, v) => s + v.total, 0);
-  const cantVentas = ventas.length;
-  document.getElementById("resumen-historial").innerHTML = `
-    <span>${cantVentas} venta${cantVentas === 1 ? "" : "s"}</span>
-    <span>Total: ${money(total)}</span>
-  `;
+  const total = filtradas.reduce((s, v) => s + v.total, 0);
+  document.getElementById("resumen-historial").innerHTML =
+    `<span>${filtradas.length} venta(s)</span><span>${money(total)}</span>`;
 
-  const listaVentas = document.getElementById("lista-ventas-historial");
-  listaVentas.innerHTML = "";
-  if (ventas.length === 0) {
-    listaVentas.innerHTML = `<div class="lista-vacia">No hay ventas en este período.</div>`;
-  } else {
-    ventas.forEach((v) => {
-      const card = document.createElement("div");
-      card.className = "tarjeta-venta";
-      const itemsStr = v.items
-        .map((i) => `${i.cantidad}x ${i.nombre}${i.tipoConsumo === "llevar" ? " (llevar)" : ""}`)
-        .join(", ");
-      card.innerHTML = `
-        <div class="tarjeta-venta-cab">
-          <span>${v.fecha} · ${v.hora}</span>
-          <span class="etiqueta-pago">${v.metodoPago || "Efectivo"}</span>
+  const lista = document.getElementById("lista-ventas-historial");
+  lista.innerHTML = filtradas.length
+    ? filtradas.map((v) => `
+        <div class="tarjeta-venta">
+          <div class="tarjeta-venta-cab">
+            <span>${v.fecha} · ${v.hora}</span>
+            <span>${v.tipoConsumo === "local" ? "🍽️ Local" : "🥡 Para llevar"}</span>
+          </div>
+          <div class="tarjeta-venta-items">${v.items.map((i) => `${i.cantidad}× ${i.nombre}`).join(", ")}</div>
+          <div class="tarjeta-venta-pie">
+            <span class="etiqueta-pago">${v.metodoPago}</span>
+            <span>${money(v.total)}</span>
+          </div>
         </div>
-        <div class="tarjeta-venta-items">${itemsStr}</div>
-        <div class="tarjeta-venta-pie">
-          <span>Total</span>
-          <span>${money(v.total)}</span>
-        </div>
-      `;
-      listaVentas.appendChild(card);
-    });
-  }
+      `).join("")
+    : `<div class="lista-vacia">No hay ventas en este periodo.</div>`;
 
-  // Cierres de caja
   const cierres = (await getAll("cierres")).sort((a, b) => b.timestampCierre - a.timestampCierre);
   const listaCierres = document.getElementById("lista-cierres-historial");
-  listaCierres.innerHTML = "";
-  if (cierres.length === 0) {
-    listaCierres.innerHTML = `<div class="lista-vacia">No hay cierres registrados.</div>`;
-  } else {
-    cierres.forEach((c) => {
-      const card = document.createElement("div");
-      card.className = "tarjeta-venta";
-      card.innerHTML = `
-        <div class="tarjeta-venta-cab">
-          <span>Cierre: ${c.fecha} · ${c.hora}</span>
-          <span>${c.cantidadVentas} ventas</span>
+  listaCierres.innerHTML = cierres.length
+    ? cierres.map((c) => `
+        <div class="tarjeta-venta">
+          <div class="tarjeta-venta-cab"><span>${c.fecha}</span><span>${c.horaCierre || ""}</span></div>
+          <div class="tarjeta-venta-items">Efectivo ${money(c.efectivo)} · Transferencia ${money(c.transferencia)} · Otro ${money(c.otro)}</div>
+          <div class="tarjeta-venta-pie"><span>${c.totalProductos} productos</span><span>${money(c.totalVentas)}</span></div>
         </div>
-        <div class="tarjeta-venta-items">
-          Efectivo: ${money(c.efectivo)} · Transf: ${money(c.transferencia)} · Otros: ${money(c.otro)}
-        </div>
-        <div class="tarjeta-venta-pie">
-          <span>Total cerrado</span>
-          <span>${money(c.total)}</span>
-        </div>
-      `;
-      listaCierres.appendChild(card);
-    });
-  }
+      `).join("")
+    : `<div class="lista-vacia">Todavía no hay cierres de caja.</div>`;
 }
 
 // ---------------- CIERRE DE CAJA ----------------
-async function obtenerVentasDesdeUltimoCierre() {
+async function ventasDesdeUltimoCierre() {
   const cierres = await getAll("cierres");
-  const ultimoCierre = cierres.length > 0 ? cierres[cierres.length - 1] : null;
-  const tsDesde = ultimoCierre ? ultimoCierre.timestampCierre : 0;
-  const todasVentas = await getAll("ventas");
-  const ventas = todasVentas.filter((v) => v.timestamp > tsDesde);
-  return { ventas, ultimoCierre };
+  const ultimo = cierres.sort((a, b) => b.timestampCierre - a.timestampCierre)[0];
+  const cutoff = ultimo ? ultimo.timestampCierre : 0;
+  const todas = await getAll("ventas");
+  return { ventas: todas.filter((v) => v.timestamp > cutoff), ultimo };
 }
 
 async function renderCierre() {
-  const { ventas, ultimoCierre } = await obtenerVentasDesdeUltimoCierre();
-
-  const textoPeriodo = document.getElementById("cierre-periodo-texto");
-  if (ultimoCierre) {
-    textoPeriodo.textContent = `Ventas desde el último cierre (${ultimoCierre.fecha} ${ultimoCierre.hora}).`;
-  } else {
-    textoPeriodo.textContent = "Ventas desde el inicio de los registros (sin cierres previos).";
-  }
+  const { ventas, ultimo } = await ventasDesdeUltimoCierre();
+  document.getElementById("cierre-periodo-texto").textContent = ultimo
+    ? `Ventas desde el último cierre (${ultimo.fecha} ${ultimo.horaCierre || ""}).`
+    : "Ventas desde que se empezó a usar la aplicación (todavía no hay cierres).";
 
   const total = ventas.reduce((s, v) => s + v.total, 0);
-  const cantProds = ventas.reduce((s, v) => s + v.items.reduce((si, it) => si + it.cantidad, 0), 0);
-  const efectivo = ventas.filter((v) => (v.metodoPago || "Efectivo") === "Efectivo").reduce((s, v) => s + v.total, 0);
+  const cantidadProductos = ventas.reduce((s, v) => s + v.items.reduce((a, i) => a + i.cantidad, 0), 0);
+  const efectivo = ventas.filter((v) => v.metodoPago === "Efectivo").reduce((s, v) => s + v.total, 0);
   const transferencia = ventas.filter((v) => v.metodoPago === "Transferencia").reduce((s, v) => s + v.total, 0);
   const otro = ventas.filter((v) => v.metodoPago === "Otro").reduce((s, v) => s + v.total, 0);
 
   document.getElementById("cierre-total").textContent = money(total);
-  document.getElementById("cierre-cant-productos").textContent = cantProds;
+  document.getElementById("cierre-cant-productos").textContent = cantidadProductos;
   document.getElementById("cierre-efectivo").textContent = money(efectivo);
   document.getElementById("cierre-transferencia").textContent = money(transferencia);
   document.getElementById("cierre-otro").textContent = money(otro);
 
-  // Conteo por producto
   const conteo = {};
-  ventas.forEach((v) => {
-    v.items.forEach((it) => {
-      conteo[it.nombre] = (conteo[it.nombre] || 0) + it.cantidad;
-    });
-  });
-
-  const lista = document.getElementById("cierre-lista-productos");
-  lista.innerHTML = "";
-  const ordenados = Object.entries(conteo).sort((a, b) => b[1] - a[1]);
-  if (ordenados.length === 0) {
-    lista.innerHTML = `<div class="texto-ayuda">No hay ventas pendientes de cierre.</div>`;
-  } else {
-    ordenados.forEach(([nom, cant]) => {
-      const row = document.createElement("div");
-      row.className = "fila-reporte";
-      row.innerHTML = `<span class="fila-reporte-nombre">${nom}</span><span class="fila-reporte-valor">${cant} unid.</span>`;
-      lista.appendChild(row);
-    });
-  }
+  ventas.forEach((v) => v.items.forEach((i) => { conteo[i.nombre] = (conteo[i.nombre] || 0) + i.cantidad; }));
+  const entradas = Object.entries(conteo).sort((a, b) => b[1] - a[1]);
+  document.getElementById("cierre-lista-productos").innerHTML = entradas.length
+    ? entradas.map(([nombre, cant]) =>
+        `<div class="fila-reporte"><span class="fila-reporte-nombre">${nombre}</span><span class="fila-reporte-valor">${cant} unid.</span></div>`
+      ).join("")
+    : `<div class="lista-vacia">No hay ventas pendientes de cierre.</div>`;
 }
 
 document.getElementById("btn-cerrar-caja").addEventListener("click", async () => {
-  const { ventas } = await obtenerVentasDesdeUltimoCierre();
+  const { ventas } = await ventasDesdeUltimoCierre();
   if (ventas.length === 0) {
-    mostrarToast("No hay ventas para cerrar.");
+    mostrarToast("No hay ventas nuevas para cerrar.");
     return;
   }
   const total = ventas.reduce((s, v) => s + v.total, 0);
-  if (!confirm(`¿Confirmas el cierre de caja por un total de ${money(total)} (${ventas.length} ventas)?`)) {
-    return;
-  }
-  const ahora = new Date();
-  const cantProds = ventas.reduce((s, v) => s + v.items.reduce((si, it) => si + it.cantidad, 0), 0);
-  const efectivo = ventas.filter((v) => (v.metodoPago || "Efectivo") === "Efectivo").reduce((s, v) => s + v.total, 0);
-  const transferencia = ventas.filter((v) => v.metodoPago === "Transferencia").reduce((s, v) => s + v.total, 0);
-  const otro = ventas.filter((v) => v.metodoPago === "Otro").reduce((s, v) => s + v.total, 0);
+  if (!confirm(`¿Confirmas cerrar la caja?\n\nTotal: ${money(total)}\nVentas: ${ventas.length}`)) return;
 
+  const conteo = {};
+  ventas.forEach((v) => v.items.forEach((i) => { conteo[i.nombre] = (conteo[i.nombre] || 0) + i.cantidad; }));
+  const ahora = new Date();
   const cierre = {
     fecha: fechaLocalStr(ahora),
-    hora: horaLocalStr(ahora),
+    horaCierre: horaLocalStr(ahora),
     timestampCierre: ahora.getTime(),
-    cantidadVentas: ventas.length,
-    cantidadProductos: cantProds,
-    total: +total.toFixed(2),
-    efectivo: +efectivo.toFixed(2),
-    transferencia: +transferencia.toFixed(2),
-    otro: +otro.toFixed(2)
+    totalVentas: +total.toFixed(2),
+    totalProductos: ventas.reduce((s, v) => s + v.items.reduce((a, i) => a + i.cantidad, 0), 0),
+    efectivo: +ventas.filter((v) => v.metodoPago === "Efectivo").reduce((s, v) => s + v.total, 0).toFixed(2),
+    transferencia: +ventas.filter((v) => v.metodoPago === "Transferencia").reduce((s, v) => s + v.total, 0).toFixed(2),
+    otro: +ventas.filter((v) => v.metodoPago === "Otro").reduce((s, v) => s + v.total, 0).toFixed(2),
+    resumenProductos: conteo
   };
-
   await add("cierres", cierre);
-  mostrarToast(`Cierre guardado: ${money(total)}`);
+  mostrarToast("Caja cerrada correctamente.");
   renderCierre();
-  sincronizarConGitHubSilencioso();
+  renderInicio();
 });
 
 // ---------------- CONFIGURACIÓN ----------------
-async function obtenerPin() {
-  const r = await getUno("config", "pin");
-  return r ? r.valor : "1234";
-}
-
 document.getElementById("btn-desbloquear").addEventListener("click", async () => {
-  const ingresado = document.getElementById("pin-config").value;
-  const real = await obtenerPin();
-  if (ingresado === real) {
+  const pinIngresado = document.getElementById("pin-config").value;
+  const guardado = await getUno("config", "pin");
+  const pinReal = guardado ? guardado.valor : "1234";
+  if (pinIngresado === pinReal) {
     configDesbloqueada = true;
     document.getElementById("bloqueo-config").classList.add("oculto");
     document.getElementById("contenido-config").classList.remove("oculto");
-    renderConfig();
+    renderListaPrecios();
   } else {
     mostrarToast("PIN incorrecto.");
-    document.getElementById("pin-config").value = "";
   }
+  document.getElementById("pin-config").value = "";
 });
 
-async function renderConfig() {
-  if (!configDesbloqueada) return;
+function renderConfig() {
+  document.getElementById("version-app").textContent = `Versión de la app: ${VERSION_APP}`;
+  if (configDesbloqueada) {
+    document.getElementById("bloqueo-config").classList.add("oculto");
+    document.getElementById("contenido-config").classList.remove("oculto");
+    renderListaPrecios();
+  }
+}
 
-  const lista = document.getElementById("lista-precios");
-  lista.innerHTML = "";
+function renderListaPrecios() {
+  const cont = document.getElementById("lista-precios");
+  cont.innerHTML = "";
   productos.forEach((p) => {
-    const card = document.createElement("div");
-    card.className = "fila-precio";
-    card.innerHTML = `
-      <div class="fila-precio-nombre">
-        <span class="fila-precio-icono">${p.icono}</span>
-        <span>${p.nombre}</span>
-      </div>
+    const div = document.createElement("div");
+    div.className = "fila-precio";
+    div.innerHTML = `
+      <div class="fila-precio-nombre"><span class="fila-precio-icono">${p.icono}</span> ${p.nombre}</div>
       <div class="fila-precio-inputs">
-        <label class="campo-precio">
-          <span>Local ($)</span>
-          <input type="number" step="0.05" min="0" value="${p.precioLocal ?? ""}" data-id="${p.id}" data-campo="local" />
+        <label class="campo-precio">En el local
+          <input type="number" step="0.01" min="0" value="${p.precioLocal.toFixed(2)}" data-id="${p.id}" data-campo="precioLocal" />
         </label>
-        <label class="campo-precio">
-          <span>Llevar ($)</span>
-          <input type="number" step="0.05" min="0" value="${p.precioLlevar ?? ""}" placeholder="Opcional" data-id="${p.id}" data-campo="llevar" />
+        <label class="campo-precio">Para llevar
+          <input type="number" step="0.01" min="0" value="${p.precioLlevar != null ? p.precioLlevar.toFixed(2) : ""}" placeholder="igual" data-id="${p.id}" data-campo="precioLlevar" />
         </label>
       </div>
     `;
-    lista.appendChild(card);
+    cont.appendChild(div);
   });
 
-  lista.querySelectorAll("input").forEach((inp) => {
-    inp.addEventListener("change", async () => {
-      const id = inp.dataset.id;
-      const campo = inp.dataset.campo;
-      const val = inp.value === "" ? null : parseFloat(inp.value);
-      const prod = productos.find((x) => x.id === id);
-      if (prod) {
-        if (campo === "local") prod.precioLocal = val ?? 0;
-        if (campo === "llevar") prod.precioLlevar = val;
-        await put("productos", prod);
-        mostrarToast(`Precio de ${prod.nombre} actualizado.`);
+  cont.querySelectorAll("input").forEach((input) => {
+    input.addEventListener("change", async () => {
+      const producto = productos.find((p) => p.id === input.dataset.id);
+      if (!producto) return;
+      const valor = input.value.trim();
+      if (input.dataset.campo === "precioLocal") {
+        producto.precioLocal = valor === "" ? 0 : parseFloat(valor);
+      } else {
+        producto.precioLlevar = valor === "" ? null : parseFloat(valor);
       }
+      await put("productos", producto);
+      renderGridProductos();
+      mostrarToast(`${producto.nombre} actualizado.`);
     });
   });
-
-  // Cargar configuración de GitHub
-  const ghConfig = (await getUno("config", "github_sync")) || { valor: {} };
-  document.getElementById("gh-repo").value = ghConfig.valor.repo || "";
-  document.getElementById("gh-token").value = ghConfig.valor.token || "";
-  document.getElementById("gh-branch").value = ghConfig.valor.branch || "main";
-
-  document.getElementById("version-app").textContent = `Versión del sistema: ${VERSION_APP}`;
 }
 
 document.getElementById("btn-guardar-pin").addEventListener("click", async () => {
   const nuevo = document.getElementById("nuevo-pin").value.trim();
   if (!/^\d{4}$/.test(nuevo)) {
-    mostrarToast("El PIN debe tener exactamente 4 dígitos.");
+    mostrarToast("El PIN debe tener 4 dígitos.");
     return;
   }
   await put("config", { clave: "pin", valor: nuevo });
   document.getElementById("nuevo-pin").value = "";
-  mostrarToast("PIN actualizado correctamente.");
+  mostrarToast("PIN actualizado.");
 });
 
-// Guardar configuración de GitHub Sync
-document.getElementById("btn-guardar-gh").addEventListener("click", async () => {
-  const repo = document.getElementById("gh-repo").value.trim();
-  const token = document.getElementById("gh-token").value.trim();
-  const branch = document.getElementById("gh-branch").value.trim() || "main";
-
-  await put("config", {
-    clave: "github_sync",
-    valor: { repo, token, branch }
-  });
-  mostrarToast("Configuración de GitHub guardada.");
-});
-
-document.getElementById("btn-probar-gh").addEventListener("click", async () => {
-  mostrarToast("Probando sincronización con GitHub...");
-  const res = await respaldarEnGitHub();
-  if (res.ok) {
-    mostrarToast("✅ Copia subida a GitHub con éxito.");
-  } else {
-    mostrarToast(`❌ Error: ${res.error}`);
-  }
-});
-
-// ---------------- RESPALDO Y RESTAURACIÓN ----------------
-async function generarDataRespaldo() {
-  return {
-    version: VERSION_APP,
-    fechaExportacion: new Date().toISOString(),
+// ---- Exportar / Importar ----
+document.getElementById("btn-exportar-json").addEventListener("click", async () => {
+  const data = {
     productos: await getAll("productos"),
     ventas: await getAll("ventas"),
     cierres: await getAll("cierres"),
-    config: await getAll("config")
+    config: await getAll("config"),
+    exportadoEl: new Date().toISOString()
   };
-}
-
-document.getElementById("btn-exportar-json").addEventListener("click", async () => {
-  const data = await generarDataRespaldo();
-  const json = JSON.stringify(data, null, 2);
-  descargarArchivo(`respaldo-cafeteria-${fechaLocalStr()}.json`, json, "application/json");
+  descargarArchivo(
+    `control-cafeteria-backup-${fechaLocalStr()}.json`,
+    JSON.stringify(data, null, 2),
+    "application/json"
+  );
 });
 
 document.getElementById("btn-exportar-csv").addEventListener("click", async () => {
   const ventas = await getAll("ventas");
-  let csv = "ID,Fecha,Hora,Consumo,MetodoPago,Productos,Total
-";
+  const filas = [["id_venta", "fecha", "hora", "producto", "cantidad", "precio_unitario", "subtotal", "total_venta", "tipo_consumo", "metodo_pago"]];
   ventas.forEach((v) => {
-    const prods = v.items.map((i) => `${i.cantidad}x ${i.nombre} (${i.tipoConsumo || "local"})`).join(" | ");
-    csv += `"${v.id}","${v.fecha}","${v.hora}","${v.tipoConsumo || "mixto"}","${v.metodoPago || "Efectivo"}","${prods.replace(/"/g, '""')}","${v.total}"
-`;
+    v.items.forEach((i) => {
+      filas.push([v.id, v.fecha, v.hora, i.nombre, i.cantidad, i.precioUnitario.toFixed(2), i.subtotal.toFixed(2), v.total.toFixed(2), v.tipoConsumo, v.metodoPago]);
+    });
   });
-  descargarArchivo(`ventas-cafeteria-${fechaLocalStr()}.csv`, csv, "text/csv");
+  const csv = filas.map((f) => f.map((campo) => `"${String(campo).replace(/"/g, '""')}"`).join(",")).join("\n");
+  descargarArchivo(`control-cafeteria-ventas-${fechaLocalStr()}.csv`, csv, "text/csv");
 });
 
 function descargarArchivo(nombre, contenido, tipo) {
@@ -829,69 +704,6 @@ document.getElementById("input-importar").addEventListener("change", async (e) =
   e.target.value = "";
 });
 
-// ---------------- GITHUB SYNC (API REST) ----------------
-async function respaldarEnGitHub() {
-  try {
-    const ghConfig = (await getUno("config", "github_sync"))?.valor;
-    if (!ghConfig || !ghConfig.repo || !ghConfig.token) {
-      return { ok: false, error: "Falta configurar Token o Repositorio." };
-    }
-
-    const { repo, token, branch = "main" } = ghConfig;
-    const path = "data/respaldo.json";
-    const data = await generarDataRespaldo();
-    const contenidoStr = JSON.stringify(data, null, 2);
-    // Codificar a UTF-8 base64
-    const contenidoB64 = btoa(unescape(encodeURIComponent(contenidoStr)));
-
-    // 1. Obtener SHA actual si el archivo ya existe
-    let sha = null;
-    const getRes = await fetch(`https://api.github.com/repos/${repo}/contents/${path}?ref=${branch}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: "application/vnd.github.v3+json"
-      }
-    });
-    if (getRes.ok) {
-      const getJson = await getRes.json();
-      sha = getJson.sha;
-    }
-
-    // 2. Subir o actualizar el archivo con PUT
-    const putRes = await fetch(`https://api.github.com/repos/${repo}/contents/${path}`, {
-      method: "PUT",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: "application/vnd.github.v3+json",
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        message: `Auto-respaldo ventas: ${fechaLocalStr()} ${horaLocalStr()}`,
-        content: contenidoB64,
-        branch: branch,
-        sha: sha || undefined
-      })
-    });
-
-    if (!putRes.ok) {
-      const err = await putRes.json();
-      return { ok: false, error: err.message || "Error al subir a GitHub." };
-    }
-
-    return { ok: true };
-  } catch (e) {
-    return { ok: false, error: e.message };
-  }
-}
-
-async function sincronizarConGitHubSilencioso() {
-  if (!navigator.onLine) return;
-  const ghConfig = (await getUno("config", "github_sync"))?.valor;
-  if (ghConfig && ghConfig.repo && ghConfig.token) {
-    respaldarEnGitHub().catch(() => {});
-  }
-}
-
 // ---------------- CARGA INICIAL ----------------
 async function cargarProductos() {
   productos = await getAll("productos");
@@ -900,6 +712,8 @@ async function cargarProductos() {
     productos = await getAll("productos");
   }
 
+  // Migración: si un producto ya guardado no tiene el ícono nuevo (o tiene el
+  // emoji antiguo), lo actualizamos sin tocar los precios que ya hayas editado.
   for (const p of productos) {
     const base = PRODUCTOS_INICIALES.find((x) => x.id === p.id);
     if (base && p.icono !== base.icono) {
