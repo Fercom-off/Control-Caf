@@ -3,7 +3,7 @@
 // Los DATOS (ventas, productos, cierres) NO se guardan aquí: viven en IndexedDB,
 // dentro del navegador, así que ya funcionan sin conexión por sí solos.
 
-const CACHE_NAME = "control-cafeteria-v1";
+const CACHE_NAME = "control-cafeteria-v2";
 const ARCHIVOS = [
   "./",
   "./index.html",
@@ -11,7 +11,9 @@ const ARCHIVOS = [
   "./app.js",
   "./manifest.json",
   "./icons/icon-192.png",
-  "./icons/icon-512.png"
+  "./icons/icon-512.png",
+  "./icons/icon-maskable-512.png",
+  "./icons/apple-touch-icon.png"
 ];
 
 self.addEventListener("install", (event) => {

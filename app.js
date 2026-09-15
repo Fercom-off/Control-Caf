@@ -4,7 +4,7 @@
 // No hay servidor: la app funciona sola, incluso sin internet.
 // ============================================================
 
-const VERSION_APP = "V1.0";
+const VERSION_APP = "V1.1";
 
 const ICONOS = {
   bolon: `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">

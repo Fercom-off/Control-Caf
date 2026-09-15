@@ -296,6 +296,80 @@ button, input { font-family: inherit; }
 
 .oculto { display: none !important; }
 
-@media (min-width: 480px) {
-  .grid-productos { grid-template-columns: repeat(3, 1fr); }
+
+
+/* ==========================================================
+   V1.1 — Íconos SVG y diseño adaptable (teléfono, tablet, PC)
+   ========================================================== */
+
+/* ---------- ÍCONOS SVG ---------- */
+.icono-marca { width: 24px; height: 24px; color: var(--caramelo); flex: none; }
+.icono-tab   { width: 22px; height: 22px; }
+.icono-chip  { width: 17px; height: 17px; flex: none; }
+.icono-btn   { width: 17px; height: 17px; flex: none; }
+
+.chip { display: inline-flex; align-items: center; gap: 7px; }
+.carrito-tab-titulo { display: inline-flex; align-items: center; gap: 8px; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+label.btn { cursor: pointer; }
+
+/* ---------- ACCESIBILIDAD Y ESCRITORIO (mouse/teclado) ---------- */
+.tab-item, .chip, .btn, .carrito-tab, .btn-cantidad, .tab-sec, .tarjeta-producto { cursor: pointer; }
+
+button:focus-visible,
+.btn:focus-visible,
+input:focus-visible {
+  outline: 3px solid rgba(200, 147, 63, 0.65);
+  outline-offset: 2px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .chip:hover { border-color: var(--cafe-medio); }
+  .tab-item:hover { color: var(--rust); background: #F7EEDD; }
+  .btn-secundario:hover { border-color: var(--cafe-medio); }
+  .btn-cobrar:hover { background: var(--rust-oscuro); }
+  .tarjeta-producto:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(43, 27, 18, 0.14);
+    border-color: var(--caramelo);
+  }
+  .tarjeta-producto { transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease; }
+  .tab-sec:hover { background: #EFE3CC; color: var(--cafe-medio); }
+}
+
+/* ---------- TABLET (desde 600 px) ---------- */
+@media (min-width: 600px) {
+  #vistas { max-width: 860px; padding: 20px 22px calc(110px + env(safe-area-inset-bottom, 0px)); }
+  .grid-productos { grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .panel-carrito { max-width: 860px; padding: 0; }
+  .tabbar { justify-content: center; }
+  .tab-item { flex: 0 1 150px; font-size: 0.74rem; }
+  .titulo-vista { font-size: 1.55rem; }
+}
+
+/* ---------- COMPUTADORA (desde 1024 px) ---------- */
+@media (min-width: 1024px) {
+  #vistas { max-width: 1080px; }
+  .grid-productos { grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .tarjetas-dashboard { grid-template-columns: repeat(4, 1fr); }
+  .tarjeta-ancha { grid-column: span 2; }
+  .tarjeta-producto { min-height: 130px; padding: 20px 12px; }
+  .producto-icono { width: 54px; height: 54px; }
+  .producto-nombre { font-size: 1rem; }
+  .producto-precio { font-size: 0.92rem; }
+  .chip { font-size: 0.94rem; padding: 10px 16px; }
+  .btn { font-size: 1rem; }
+  .tarjeta-valor { font-size: 1.5rem; }
+  .panel-carrito { max-width: 1080px; }
+
+  /* El modal se ve centrado, como un diálogo clásico de escritorio */
+  .modal { align-items: center; }
+  .modal-caja { border-radius: 20px; }
+}
+
+/* ---------- PANTALLAS GRANDES (desde 1400 px) ---------- */
+@media (min-width: 1400px) {
+  #vistas { max-width: 1240px; }
+  .grid-productos { grid-template-columns: repeat(5, 1fr); }
+  .panel-carrito { max-width: 1240px; }
 }

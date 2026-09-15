@@ -2,21 +2,24 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Control Cafetería</title>
+<meta name="description" content="Sistema de punto de venta para cafetería. Funciona sin internet en teléfono, tablet y computadora." />
 <meta name="theme-color" content="#3E2723" />
 <link rel="manifest" href="manifest.json" />
-<link rel="icon" href="icons/icon-192.png" />
-<link rel="apple-touch-icon" href="icons/icon-192.png" />
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+<meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Cafetería" />
 <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
 <header class="topbar">
   <div class="marca">
-    <span class="marca-icono">☕</span>
+    <svg class="icono-marca" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 8h1a4 4 0 1 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><line x1="6" y1="2" x2="6" y2="4"/><line x1="10" y1="2" x2="10" y2="4"/><line x1="14" y1="2" x2="14" y2="4"/></svg>
     <span class="marca-texto">Control Cafetería</span>
   </div>
   <div class="reloj" id="reloj"></div>
@@ -59,15 +62,24 @@
   <!-- ============ VENTA ============ -->
   <section class="vista vista-activa" id="vista-venta" data-vista="venta">
     <div class="selector-consumo">
-      <button class="chip chip-activo" data-tipo="local" id="btn-tipo-local">🍽️ En el local</button>
-      <button class="chip" data-tipo="llevar" id="btn-tipo-llevar">🥡 Para llevar</button>
+      <button class="chip chip-activo" data-tipo="local" id="btn-tipo-local">
+        <svg class="icono-chip" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></svg>
+        En el local
+      </button>
+      <button class="chip" data-tipo="llevar" id="btn-tipo-llevar">
+        <svg class="icono-chip" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 7h12l1.5 13.5a1 1 0 0 1-1 1.1H5.5a1 1 0 0 1-1-1.1Z"/><path d="M9 10V6a3 3 0 0 1 6 0v4"/></svg>
+        Para llevar
+      </button>
     </div>
 
     <div class="grid-productos" id="grid-productos"></div>
 
     <div class="panel-carrito" id="panel-carrito">
       <button class="carrito-tab" id="btn-toggle-carrito">
-        <span>🧾 Carrito</span>
+        <span class="carrito-tab-titulo">
+          <svg class="icono-chip" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h14v18l-2.3-1.5L14.4 21l-2.4-1.5L9.6 21l-2.3-1.5L5 21Z"/><path d="M9 8h6M9 12h6"/></svg>
+          Carrito
+        </span>
         <span id="carrito-resumen-mini">0 items · $0.00</span>
       </button>
       <div class="carrito-contenido" id="carrito-contenido">
@@ -143,7 +155,10 @@
     <h2 class="subtitulo-vista">Resumen por producto</h2>
     <div id="cierre-lista-productos" class="lista-reporte"></div>
 
-    <button class="btn btn-cobrar btn-ancho" id="btn-cerrar-caja">🔒 CERRAR CAJA</button>
+    <button class="btn btn-cobrar btn-ancho" id="btn-cerrar-caja">
+      <svg class="icono-btn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></svg>
+      CERRAR CAJA
+    </button>
   </section>
 
   <!-- ============ CONFIGURACIÓN ============ -->
@@ -169,11 +184,20 @@
 
       <h2 class="subtitulo-vista">Respaldo de información</h2>
       <div class="fila-config">
-        <button class="btn btn-secundario" id="btn-exportar-json">💾 Exportar todo (JSON)</button>
-        <button class="btn btn-secundario" id="btn-exportar-csv">📄 Exportar ventas (CSV)</button>
+        <button class="btn btn-secundario" id="btn-exportar-json">
+          <svg class="icono-btn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7.5 10.5 12 15l4.5-4.5"/><path d="M4 17v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>
+          Exportar todo (JSON)
+        </button>
+        <button class="btn btn-secundario" id="btn-exportar-csv">
+          <svg class="icono-btn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2.5H6.5a2 2 0 0 0-2 2v15a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V8Z"/><path d="M14 2.5V8h5.5"/><path d="M8.5 12.5h7M8.5 16h7"/></svg>
+          Exportar ventas (CSV)
+        </button>
       </div>
       <div class="fila-config">
-        <label for="input-importar" class="btn btn-secundario">📥 Importar respaldo (JSON)</label>
+        <label for="input-importar" class="btn btn-secundario">
+          <svg class="icono-btn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3M7.5 7.5 12 3l4.5 4.5"/><path d="M4 17v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>
+          Importar respaldo (JSON)
+        </label>
         <input type="file" id="input-importar" accept="application/json" class="oculto" />
       </div>
       <p class="texto-ayuda">Importar reemplaza toda la información actual por la del archivo. Úsalo con cuidado.</p>
@@ -186,21 +210,26 @@
 
 </main>
 
-<nav class="tabbar" id="tabbar">
+<nav class="tabbar" id="tabbar" aria-label="Navegación principal">
   <button class="tab-item" data-vista="inicio">
-    <span class="tab-icono">🏠</span><span>Inicio</span>
+    <svg class="icono-tab" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M9 21v-6h6v6"/></svg>
+    <span>Inicio</span>
   </button>
   <button class="tab-item tab-activa" data-vista="venta">
-    <span class="tab-icono">🛒</span><span>Venta</span>
+    <svg class="icono-tab" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="20" r="1.6"/><circle cx="17" cy="20" r="1.6"/><path d="M3 4h2l2.4 11.2a1.5 1.5 0 0 0 1.5 1.3H17a1.5 1.5 0 0 0 1.5-1.2L20 8H6"/></svg>
+    <span>Venta</span>
   </button>
   <button class="tab-item" data-vista="historial">
-    <span class="tab-icono">📋</span><span>Historial</span>
+    <svg class="icono-tab" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="4.5" width="12" height="17" rx="2"/><path d="M9 4.5a2.5 2.5 0 0 1 6 0"/><path d="M9 11h6M9 15h4"/></svg>
+    <span>Historial</span>
   </button>
   <button class="tab-item" data-vista="cierre">
-    <span class="tab-icono">🔒</span><span>Caja</span>
+    <svg class="icono-tab" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></svg>
+    <span>Caja</span>
   </button>
   <button class="tab-item" data-vista="config">
-    <span class="tab-icono">⚙️</span><span>Config</span>
+    <svg class="icono-tab" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.55V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1-1.55 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.55-1H3a2 2 0 1 1 0-4h.09a1.7 1.7 0 0 0 1.55-1 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-1.55V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1 1.55 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9c.24.6.87 1 1.51 1H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.51 1Z"/></svg>
+    <span>Config</span>
   </button>
 </nav>
 
@@ -213,9 +242,18 @@
 
     <p class="modal-etiqueta">Método de pago</p>
     <div class="selector-consumo">
-      <button class="chip chip-activo" data-metodo="Efectivo">💵 Efectivo</button>
-      <button class="chip" data-metodo="Transferencia">📲 Transferencia</button>
-      <button class="chip" data-metodo="Otro">🔖 Otro</button>
+      <button class="chip chip-activo" data-metodo="Efectivo">
+        <svg class="icono-chip" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="6.5" width="19" height="11" rx="2"/><circle cx="12" cy="12" r="2.6"/><path d="M6.5 12h.01M17.5 12h.01"/></svg>
+        Efectivo
+      </button>
+      <button class="chip" data-metodo="Transferencia">
+        <svg class="icono-chip" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="2.5" width="10" height="19" rx="2"/><path d="M12 16V9M9.5 11.5 12 9l2.5 2.5"/></svg>
+        Transferencia
+      </button>
+      <button class="chip" data-metodo="Otro">
+        <svg class="icono-chip" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.6 3.6 20.4 11.4a2 2 0 0 1 0 2.8l-6.2 6.2a2 2 0 0 1-2.8 0L3.6 12.6A2 2 0 0 1 3 11.2V5a2 2 0 0 1 2-2h6.2a2 2 0 0 1 1.4.6Z"/><circle cx="7.5" cy="7.5" r="1"/></svg>
+        Otro
+      </button>
     </div>
 
     <div class="modal-acciones">
