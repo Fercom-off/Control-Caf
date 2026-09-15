@@ -1,9 +1,5 @@
 // service-worker.js
-// Guarda una copia de la app para que abra sin internet.
-// Los DATOS (ventas, productos, cierres) NO se guardan aquí: viven en IndexedDB,
-// dentro del navegador, así que ya funcionan sin conexión por sí solos.
-
-const CACHE_NAME = "control-cafeteria-v2";
+const CACHE_NAME = "control-cafeteria-v3";
 const ARCHIVOS = [
   "./",
   "./index.html",
@@ -36,8 +32,6 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
-// Estrategia: intenta la red primero (para tener la versión más nueva),
-// y si no hay internet, responde con la copia guardada.
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
 

@@ -4,7 +4,7 @@
 // No hay servidor: la app funciona sola, incluso sin internet.
 // ============================================================
 
-const VERSION_APP = "V1.1";
+const VERSION_APP = "V1.2";
 
 const ICONOS = {
   bolon: `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
@@ -238,8 +238,12 @@ function agregarAlCarrito(producto) {
     carrito.push({ productoId: producto.id, nombre: producto.nombre, precioUnitario: precio, cantidad: 1 });
   }
   renderCarrito();
-  const cont = document.getElementById("carrito-contenido");
-  if (!cont.classList.contains("abierto")) cont.classList.add("abierto");
+  // Mostramos feedback rápido sin tapar los productos inferiores
+  const mini = document.getElementById("carrito-resumen-mini");
+  if (mini) {
+    mini.style.transform = "scale(1.15)";
+    setTimeout(() => { mini.style.transform = "scale(1)"; }, 180);
+  }
 }
 
 function cambiarCantidad(productoId, delta) {
