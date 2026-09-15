@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+<title>Control Cafetería</title>
+<meta name="theme-color" content="#3E2723" />
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" href="icons/icon-192.png" />
+<link rel="apple-touch-icon" href="icons/icon-192.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<header class="topbar">
+  <div class="marca">
+    <span class="marca-icono">☕</span>
+    <span class="marca-texto">Control Cafetería</span>
+  </div>
+  <div class="reloj" id="reloj"></div>
+</header>
+
+<main id="vistas">
+
+  <!-- ============ INICIO / DASHBOARD ============ -->
+  <section class="vista" id="vista-inicio" data-vista="inicio">
+    <h1 class="titulo-vista">Inicio</h1>
+    <div class="tarjetas-dashboard">
+      <div class="tarjeta tarjeta-acento">
+        <span class="tarjeta-etiqueta">Ventas de hoy</span>
+        <span class="tarjeta-valor" id="dash-ventas-hoy">$0.00</span>
+      </div>
+      <div class="tarjeta">
+        <span class="tarjeta-etiqueta">Productos vendidos hoy</span>
+        <span class="tarjeta-valor" id="dash-productos-hoy">0</span>
+      </div>
+      <div class="tarjeta">
+        <span class="tarjeta-etiqueta">Ventas esta semana</span>
+        <span class="tarjeta-valor" id="dash-ventas-semana">$0.00</span>
+      </div>
+      <div class="tarjeta">
+        <span class="tarjeta-etiqueta">Ventas este mes</span>
+        <span class="tarjeta-valor" id="dash-ventas-mes">$0.00</span>
+      </div>
+      <div class="tarjeta tarjeta-ancha">
+        <span class="tarjeta-etiqueta">Producto más vendido (este mes)</span>
+        <span class="tarjeta-valor" id="dash-mas-vendido">—</span>
+      </div>
+    </div>
+
+    <h2 class="subtitulo-vista">Productos vendidos por cantidad — este mes</h2>
+    <div id="dash-lista-productos" class="lista-reporte"></div>
+
+    <div class="caja-estado" id="caja-estado-inicio"></div>
+  </section>
+
+  <!-- ============ VENTA ============ -->
+  <section class="vista vista-activa" id="vista-venta" data-vista="venta">
+    <div class="selector-consumo">
+      <button class="chip chip-activo" data-tipo="local" id="btn-tipo-local">🍽️ En el local</button>
+      <button class="chip" data-tipo="llevar" id="btn-tipo-llevar">🥡 Para llevar</button>
+    </div>
+
+    <div class="grid-productos" id="grid-productos"></div>
+
+    <div class="panel-carrito" id="panel-carrito">
+      <button class="carrito-tab" id="btn-toggle-carrito">
+        <span>🧾 Carrito</span>
+        <span id="carrito-resumen-mini">0 items · $0.00</span>
+      </button>
+      <div class="carrito-contenido" id="carrito-contenido">
+        <div id="lista-carrito" class="lista-carrito"></div>
+        <div class="carrito-total-fila">
+          <span>TOTAL</span>
+          <span id="carrito-total">$0.00</span>
+        </div>
+        <div class="carrito-acciones">
+          <button class="btn btn-secundario" id="btn-vaciar-carrito">Vaciar</button>
+          <button class="btn btn-cobrar" id="btn-cobrar">COBRAR</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ HISTORIAL ============ -->
+  <section class="vista" id="vista-historial" data-vista="historial">
+    <h1 class="titulo-vista">Historial</h1>
+    <div class="filtros-historial" id="filtros-historial">
+      <button class="chip chip-activo" data-rango="hoy">Hoy</button>
+      <button class="chip" data-rango="ayer">Ayer</button>
+      <button class="chip" data-rango="semana">Esta semana</button>
+      <button class="chip" data-rango="mes">Este mes</button>
+      <button class="chip" data-rango="personalizado">Personalizado</button>
+    </div>
+    <div class="rango-personalizado oculto" id="rango-personalizado">
+      <input type="date" id="fecha-desde" />
+      <span>a</span>
+      <input type="date" id="fecha-hasta" />
+      <button class="btn btn-chico" id="btn-aplicar-rango">Aplicar</button>
+    </div>
+
+    <div class="resumen-historial" id="resumen-historial"></div>
+
+    <div class="tabs-secundarias">
+      <button class="tab-sec tab-sec-activa" data-tab="ventas">Ventas</button>
+      <button class="tab-sec" data-tab="cierres">Cierres de caja</button>
+    </div>
+
+    <div id="lista-ventas-historial" class="lista-ventas"></div>
+    <div id="lista-cierres-historial" class="lista-ventas oculto"></div>
+  </section>
+
+  <!-- ============ CIERRE DE CAJA ============ -->
+  <section class="vista" id="vista-cierre" data-vista="cierre">
+    <h1 class="titulo-vista">Cierre de caja</h1>
+    <p class="texto-ayuda" id="cierre-periodo-texto">Ventas desde el último cierre.</p>
+
+    <div class="tarjetas-dashboard">
+      <div class="tarjeta tarjeta-acento tarjeta-ancha">
+        <span class="tarjeta-etiqueta">Ventas totales</span>
+        <span class="tarjeta-valor" id="cierre-total">$0.00</span>
+      </div>
+      <div class="tarjeta">
+        <span class="tarjeta-etiqueta">Productos vendidos</span>
+        <span class="tarjeta-valor" id="cierre-cant-productos">0</span>
+      </div>
+      <div class="tarjeta">
+        <span class="tarjeta-etiqueta">Efectivo</span>
+        <span class="tarjeta-valor" id="cierre-efectivo">$0.00</span>
+      </div>
+      <div class="tarjeta">
+        <span class="tarjeta-etiqueta">Transferencias</span>
+        <span class="tarjeta-valor" id="cierre-transferencia">$0.00</span>
+      </div>
+      <div class="tarjeta">
+        <span class="tarjeta-etiqueta">Otros</span>
+        <span class="tarjeta-valor" id="cierre-otro">$0.00</span>
+      </div>
+    </div>
+
+    <h2 class="subtitulo-vista">Resumen por producto</h2>
+    <div id="cierre-lista-productos" class="lista-reporte"></div>
+
+    <button class="btn btn-cobrar btn-ancho" id="btn-cerrar-caja">🔒 CERRAR CAJA</button>
+  </section>
+
+  <!-- ============ CONFIGURACIÓN ============ -->
+  <section class="vista" id="vista-config" data-vista="config">
+    <h1 class="titulo-vista">Configuración</h1>
+
+    <div id="bloqueo-config" class="bloqueo-config">
+      <p>Esta sección está protegida para evitar cambios accidentales.</p>
+      <input type="password" id="pin-config" placeholder="PIN (4 dígitos)" inputmode="numeric" maxlength="4" />
+      <button class="btn btn-cobrar" id="btn-desbloquear">Desbloquear</button>
+      <p class="texto-ayuda">PIN inicial: 1234. Puedes cambiarlo abajo una vez dentro.</p>
+    </div>
+
+    <div id="contenido-config" class="oculto">
+      <h2 class="subtitulo-vista">Precios de productos</h2>
+      <div id="lista-precios" class="lista-precios"></div>
+
+      <h2 class="subtitulo-vista">Cambiar PIN de configuración</h2>
+      <div class="fila-config">
+        <input type="password" id="nuevo-pin" placeholder="Nuevo PIN (4 dígitos)" inputmode="numeric" maxlength="4" />
+        <button class="btn btn-secundario" id="btn-guardar-pin">Guardar PIN</button>
+      </div>
+
+      <h2 class="subtitulo-vista">Respaldo de información</h2>
+      <div class="fila-config">
+        <button class="btn btn-secundario" id="btn-exportar-json">💾 Exportar todo (JSON)</button>
+        <button class="btn btn-secundario" id="btn-exportar-csv">📄 Exportar ventas (CSV)</button>
+      </div>
+      <div class="fila-config">
+        <label for="input-importar" class="btn btn-secundario">📥 Importar respaldo (JSON)</label>
+        <input type="file" id="input-importar" accept="application/json" class="oculto" />
+      </div>
+      <p class="texto-ayuda">Importar reemplaza toda la información actual por la del archivo. Úsalo con cuidado.</p>
+
+      <h2 class="subtitulo-vista">Datos de la cafetería</h2>
+      <p class="texto-ayuda">Fercom Support · Catacocha, Paltas, Loja, Ecuador</p>
+      <p class="texto-ayuda" id="version-app"></p>
+    </div>
+  </section>
+
+</main>
+
+<nav class="tabbar" id="tabbar">
+  <button class="tab-item" data-vista="inicio">
+    <span class="tab-icono">🏠</span><span>Inicio</span>
+  </button>
+  <button class="tab-item tab-activa" data-vista="venta">
+    <span class="tab-icono">🛒</span><span>Venta</span>
+  </button>
+  <button class="tab-item" data-vista="historial">
+    <span class="tab-icono">📋</span><span>Historial</span>
+  </button>
+  <button class="tab-item" data-vista="cierre">
+    <span class="tab-icono">🔒</span><span>Caja</span>
+  </button>
+  <button class="tab-item" data-vista="config">
+    <span class="tab-icono">⚙️</span><span>Config</span>
+  </button>
+</nav>
+
+<!-- ============ MODAL COBRO ============ -->
+<div class="modal oculto" id="modal-cobro">
+  <div class="modal-caja">
+    <h2>Confirmar cobro</h2>
+    <p class="modal-total">Total: <strong id="modal-total-monto">$0.00</strong></p>
+    <p class="modal-tipo" id="modal-tipo-consumo"></p>
+
+    <p class="modal-etiqueta">Método de pago</p>
+    <div class="selector-consumo">
+      <button class="chip chip-activo" data-metodo="Efectivo">💵 Efectivo</button>
+      <button class="chip" data-metodo="Transferencia">📲 Transferencia</button>
+      <button class="chip" data-metodo="Otro">🔖 Otro</button>
+    </div>
+
+    <div class="modal-acciones">
+      <button class="btn btn-secundario" id="btn-cancelar-cobro">Cancelar</button>
+      <button class="btn btn-cobrar" id="btn-confirmar-cobro">Confirmar venta</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ TOAST ============ -->
+<div class="toast oculto" id="toast"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
