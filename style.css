@@ -462,3 +462,18 @@ label.btn { cursor: pointer; }
   .grid-productos { grid-template-columns: repeat(5, 1fr); }
   .panel-carrito { max-width: 1240px; }
 }
+
+
+/* --- Corrección V1.3: etiqueta de modo (local/llevar) en cada ítem del carrito --- */
+.fila-carrito-modo {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.06);
+  color: inherit;
+  opacity: 0.75;
+  vertical-align: middle;
+}

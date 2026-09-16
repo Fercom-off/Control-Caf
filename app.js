@@ -4,7 +4,7 @@
 // No hay servidor: la app funciona sola, incluso sin internet.
 // ============================================================
 
-const VERSION_APP = "V1.2";
+const VERSION_APP = "V1.3";
 
 const ICONOS = {
   bolon: `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
@@ -230,12 +230,15 @@ function renderGridProductos() {
 }
 
 function agregarAlCarrito(producto) {
+  // El precio y el modo (local/llevar) quedan CONGELADOS en el ítem del carrito
+  // en el momento en que se agrega. Cambiar de pestaña después no los modifica.
   const precio = precioProducto(producto, tipoConsumo);
-  const existente = carrito.find((i) => i.productoId === producto.id);
+  const key = `${producto.id}__${tipoConsumo}`;
+  const existente = carrito.find((i) => i.key === key);
   if (existente) {
     existente.cantidad += 1;
   } else {
-    carrito.push({ productoId: producto.id, nombre: producto.nombre, precioUnitario: precio, cantidad: 1 });
+    carrito.push({ key, productoId: producto.id, nombre: producto.nombre, precioUnitario: precio, cantidad: 1, modo: tipoConsumo });
   }
   renderCarrito();
   // Feedback sutil sin desplegar el panel sobre los productos inferiores
@@ -246,12 +249,12 @@ function agregarAlCarrito(producto) {
   }
 }
 
-function cambiarCantidad(productoId, delta) {
-  const item = carrito.find((i) => i.productoId === productoId);
+function cambiarCantidad(key, delta) {
+  const item = carrito.find((i) => i.key === key);
   if (!item) return;
   item.cantidad += delta;
   if (item.cantidad <= 0) {
-    carrito = carrito.filter((i) => i.productoId !== productoId);
+    carrito = carrito.filter((i) => i.key !== key);
   }
   renderCarrito();
 }
@@ -270,15 +273,16 @@ function renderCarrito() {
     cantidadTotal += item.cantidad;
     const fila = document.createElement("div");
     fila.className = "fila-carrito";
+    const etiquetaModo = item.modo === "llevar" ? "🥡 Para llevar" : "🍽️ Local";
     fila.innerHTML = `
       <div class="fila-carrito-info">
-        <div class="fila-carrito-nombre">${item.nombre}</div>
+        <div class="fila-carrito-nombre">${item.nombre} <span class="fila-carrito-modo">${etiquetaModo}</span></div>
         <div class="fila-carrito-precio">${money(item.precioUnitario)} c/u</div>
       </div>
       <div class="fila-carrito-controles">
-        <button class="btn-cantidad" data-accion="menos" data-id="${item.productoId}">−</button>
+        <button class="btn-cantidad" data-accion="menos" data-id="${item.key}">−</button>
         <span>${item.cantidad}</span>
-        <button class="btn-cantidad" data-accion="mas" data-id="${item.productoId}">+</button>
+        <button class="btn-cantidad" data-accion="mas" data-id="${item.key}">+</button>
       </div>
       <div class="fila-carrito-subtotal">${money(subtotal)}</div>
     `;
@@ -314,15 +318,12 @@ document.getElementById("btn-tipo-local").addEventListener("click", () => setTip
 document.getElementById("btn-tipo-llevar").addEventListener("click", () => setTipoConsumo("llevar"));
 
 function setTipoConsumo(tipo) {
+  // Solo cambia el modo activo para los PRÓXIMOS productos que se agreguen.
+  // Los ítems que ya están en el carrito NO se tocan ni se recalculan.
   tipoConsumo = tipo;
   document.getElementById("btn-tipo-local").classList.toggle("chip-activo", tipo === "local");
   document.getElementById("btn-tipo-llevar").classList.toggle("chip-activo", tipo === "llevar");
-  carrito.forEach((item) => {
-    const p = productos.find((pr) => pr.id === item.productoId);
-    if (p) item.precioUnitario = precioProducto(p, tipoConsumo);
-  });
   renderGridProductos();
-  renderCarrito();
 }
 
 // ---------------- COBRO ----------------
@@ -333,8 +334,12 @@ document.getElementById("btn-cobrar").addEventListener("click", () => {
   }
   const total = carrito.reduce((s, i) => s + i.precioUnitario * i.cantidad, 0);
   document.getElementById("modal-total-monto").textContent = money(total);
-  document.getElementById("modal-tipo-consumo").textContent =
-    tipoConsumo === "local" ? "🍽️ Consumo en el local" : "🥡 Para llevar";
+  {
+    const modos = new Set(carrito.map((i) => i.modo));
+    document.getElementById("modal-tipo-consumo").textContent =
+      modos.size > 1 ? "🍽️🥡 Mixto (local y para llevar)" :
+      modos.has("llevar") ? "🥡 Para llevar" : "🍽️ Consumo en el local";
+  }
   metodoPagoSeleccionado = "Efectivo";
   document.querySelectorAll("#modal-cobro [data-metodo]").forEach((b) =>
     b.classList.toggle("chip-activo", b.dataset.metodo === "Efectivo")
@@ -367,10 +372,15 @@ document.getElementById("btn-confirmar-cobro").addEventListener("click", async (
       nombre: i.nombre,
       cantidad: i.cantidad,
       precioUnitario: i.precioUnitario,
+      modo: i.modo,
       subtotal: +(i.precioUnitario * i.cantidad).toFixed(2)
     })),
     total: +total.toFixed(2),
-    tipoConsumo,
+    tipoConsumo: (() => {
+      const modos = new Set(carrito.map((i) => i.modo));
+      if (modos.size > 1) return "mixto";
+      return modos.has("llevar") ? "llevar" : "local";
+    })(),
     metodoPago: metodoPagoSeleccionado
   };
   await add("ventas", venta);
@@ -474,7 +484,7 @@ async function renderHistorial() {
         <div class="tarjeta-venta">
           <div class="tarjeta-venta-cab">
             <span>${v.fecha} · ${v.hora}</span>
-            <span>${v.tipoConsumo === "local" ? "🍽️ Local" : "🥡 Para llevar"}</span>
+            <span>${v.tipoConsumo === "local" ? "🍽️ Local" : v.tipoConsumo === "llevar" ? "🥡 Para llevar" : "🍽️🥡 Mixto"}</span>
           </div>
           <div class="tarjeta-venta-items">${v.items.map((i) => `${i.cantidad}× ${i.nombre}`).join(", ")}</div>
           <div class="tarjeta-venta-pie">
@@ -655,10 +665,10 @@ document.getElementById("btn-exportar-json").addEventListener("click", async () 
 
 document.getElementById("btn-exportar-csv").addEventListener("click", async () => {
   const ventas = await getAll("ventas");
-  const filas = [["id_venta", "fecha", "hora", "producto", "cantidad", "precio_unitario", "subtotal", "total_venta", "tipo_consumo", "metodo_pago"]];
+  const filas = [["id_venta", "fecha", "hora", "producto", "modo_item", "cantidad", "precio_unitario", "subtotal", "total_venta", "tipo_consumo", "metodo_pago"]];
   ventas.forEach((v) => {
     v.items.forEach((i) => {
-      filas.push([v.id, v.fecha, v.hora, i.nombre, i.cantidad, i.precioUnitario.toFixed(2), i.subtotal.toFixed(2), v.total.toFixed(2), v.tipoConsumo, v.metodoPago]);
+      filas.push([v.id, v.fecha, v.hora, i.nombre, i.modo || v.tipoConsumo, i.cantidad, i.precioUnitario.toFixed(2), i.subtotal.toFixed(2), v.total.toFixed(2), v.tipoConsumo, v.metodoPago]);
     });
   });
   const csv = filas.map((f) => f.map((campo) => `"${String(campo).replace(/"/g, '""')}"`).join(",")).join("\n");
